@@ -15,8 +15,12 @@ import java.util.List;
 public class JobService {
 
     Tika ob=new Tika();
+
     @Autowired
     JobDsRepo repo;
+
+    @Autowired
+    private CohereService cohereService;
 
     public String resumeParsing(MultipartFile resume) throws IOException, TikaException {
         return  ob.parseToString(resume.getInputStream());
@@ -31,6 +35,23 @@ public class JobService {
     }
 
 
+    public List<JobDescription> findBestMatches(String resumeText) {
+        List<JobDescription> allJobs = repo.findAll();
+
+        return allJobs.stream()
+                .map(jd -> {
+                    try {
+                        double score = cohereService.getSimilarity(resumeText, jd.getJobSummary());
+                        jd.setScore(score);
+                    } catch (Exception e) {
+                        jd.setScore(0.0);
+                    }
+                    return jd;
+                })
+                .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
+                .limit(5)
+                .toList();
+    }
 
 
 }

@@ -1,6 +1,7 @@
 package com.resumeai.resume_evaluator.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 
@@ -18,6 +19,18 @@ public class JobDescription {
     private String jobSummary;
     private String keyResponsibility;
     private String requirements;
+
+    @Transient
+    private double score;
+
+    public double getScore() {
+        return score;
+    }
+
+    public void setScore(double score) {
+        this.score = score;
+    }
+
 
     public String getId() {
         return id;
