@@ -36,22 +36,30 @@ public class JobService {
 
 
     public List<JobDescription> findBestMatches(String resumeText) {
-        List<JobDescription> allJobs = repo.findAll();
+        List<JobDescription> jobs = repo.findAll();
 
-        return allJobs.stream()
+        return jobs.stream()
                 .map(jd -> {
                     try {
-                        double score = cohereService.getSimilarity(resumeText, jd.getJobSummary());
+                        String jdText = jd.getJobTitle() + ". "
+                                + jd.getJobSummary() + " "
+                                + jd.getKeyResponsibility() + " "
+                                + jd.getRequirements();
+
+                        double score = cohereService.getSimilarity(resumeText, jdText);
                         jd.setScore(score);
+                        System.out.println("Matched " + jd.getJobTitle() + " → Score: " + score);
                     } catch (Exception e) {
                         jd.setScore(0.0);
+                        System.out.println("Error for " + jd.getJobTitle() + ": " + e.getMessage());
                     }
                     return jd;
                 })
                 .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
-                .limit(5)
+                .limit(3)
                 .toList();
     }
+
 
 
 }

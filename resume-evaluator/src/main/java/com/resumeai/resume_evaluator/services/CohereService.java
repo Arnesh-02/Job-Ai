@@ -21,19 +21,19 @@ public class CohereService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public double getSimilarity(String resumeText, String jobText) throws IOException {
-        List<String> texts = List.of(resumeText, jobText);
+        List<String> texts = List.of(
+                resumeText.length() > 1000 ? resumeText.substring(0, 1000) : resumeText,
+                jobText.length() > 1000 ? jobText.substring(0, 1000) : jobText
+        );
 
-        // Build JSON payload
-        String json = objectMapper.writeValueAsString(new Object() {
-            Map<String, Object> payload = new HashMap<>();
-                payload.put("texts", stripLongTexts(texts));
-                payload.put("model", "embed-english-v3.0");
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("model", "embed-english-v3.0");
+        payload.put("texts", texts);
+        payload.put("input_type", "search_document"); // ← REQUIRED for v3.0
 
-            String json = objectMapper.writeValueAsString(payload);
 
-        });
+        String json = objectMapper.writeValueAsString(payload);
 
-        // Make API Request
         Request request = new Request.Builder()
                 .url("https://api.cohere.ai/v1/embed")
                 .post(RequestBody.create(json, MediaType.parse("application/json")))
@@ -42,7 +42,10 @@ public class CohereService {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("Unexpected response " + response);
+            if (!response.isSuccessful()) {
+                System.out.println("❌ Cohere API error response: " + response.body().string());
+                throw new IOException("Unexpected response " + response);
+            }
 
             JsonNode root = objectMapper.readTree(response.body().string());
             List<Double> a = objectMapper.convertValue(root.get("embeddings").get(0), List.class);
@@ -50,6 +53,7 @@ public class CohereService {
             return cosineSimilarity(a, b);
         }
     }
+
 
     private List<String> stripLongTexts(List<String> inputs) {
         return inputs.stream()

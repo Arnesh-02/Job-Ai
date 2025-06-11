@@ -4,18 +4,25 @@ import com.resumeai.resume_evaluator.model.JobDescription;
 import com.resumeai.resume_evaluator.services.JobService;
 import org.apache.tika.exception.TikaException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
 
-@RestController
+@Controller
 @RequestMapping("/api/job/")
 public class JobController {
 
     @Autowired
     JobService obj;
+
+    @GetMapping("/")
+    public String home() {
+        return "index";
+    }
+
 
 
     @PostMapping("/add")
@@ -25,9 +32,11 @@ public class JobController {
 
 
     @PostMapping("/match")
-    public List<JobDescription> getBestMatches(@RequestParam MultipartFile resume) throws IOException, TikaException {
+    public String getBestMatches(@RequestParam MultipartFile resume, org.springframework.ui.Model model) throws IOException, TikaException {
         String parsedText = obj.resumeParsing(resume);
-        return obj.findBestMatches(parsedText);
+        List<JobDescription> matches = obj.findBestMatches(parsedText);
+        model.addAttribute("matches", matches);
+        return "index";  // render the same page with results
     }
 
 
